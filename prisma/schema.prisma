@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  description String
+  orderId     Int?
+  readerId    Int?
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  Order       Order?   @relation(fields: [orderId], references: [id], onUpdate: NoAction, map: "fk_log_order")
+  Reader      Reader?  @relation(fields: [readerId], references: [id], onUpdate: NoAction, map: "fk_log_reader")
+}
+
+model Book {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String?
+  frontImage   String?
+  backImage    String?
+  stockQty     Int?          @default(0)
+  isAvailable  Boolean?      @default(true)
+  featured     Boolean?      @default(false)
+  languageId   Int?
+  categoryId   Int?
+  createdAt    DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime      @default(now()) @db.Timestamp(6)
+  bookCode     Int
+  kabatNumber  Int?
+  bookSize     String?       @db.VarChar
+  author       String?       @db.VarChar
+  tikakar      String?       @db.VarChar
+  prakashak    String?       @db.VarChar
+  sampadak     String?       @db.VarChar
+  anuvadak     String?       @db.VarChar
+  vishay       String?       @db.VarChar
+  shreni1      String?       @db.VarChar
+  shreni2      String?       @db.VarChar
+  shreni3      String?       @db.VarChar
+  pages        Int?
+  yearAD       Int?
+  vikramSamvat Int?
+  veerSamvat   Int?
+  price        Float?
+  prakar       String?       @db.VarChar
+  edition      Int?
+  Category     Category?     @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_book_category")
+  Language     Language?     @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_book_language")
+  OrderedBook  OrderedBook[]
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  Book Book[]
+}
+
+model Language {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  Book Book[]
+}
+
+model Order {
+  id              Int           @id @default(autoincrement())
+  orderDate       DateTime      @default(now()) @db.Timestamp(6)
+  status          OrderStatus   @default(PENDING)
+  shippingDetails String?
+  readerId        Int
+  createdAt       DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime      @default(now()) @db.Timestamp(6)
+  ActivityLog     ActivityLog[]
+  Reader          Reader        @relation(fields: [readerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_reader")
+  OrderedBook     OrderedBook[]
+}
+
+model OrderedBook {
+  id       Int        @id @default(autoincrement())
+  orderId  Int
+  bookId   Int
+  quantity Int
+  status   BookStatus @default(PENDING)
+  Book     Book       @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ob_book")
+  Order    Order      @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ob_order")
+}
+
+model Reader {
+  id          Int           @id @default(autoincrement())
+  firstname   String
+  lastname    String
+  mobile      String        @unique
+  email       String?
+  address     String?
+  isactive    Boolean       @default(true)
+  createdat   DateTime      @default(now()) @db.Timestamp(6)
+  city        String        @db.VarChar
+  state       String        @db.VarChar
+  pincode     String        @db.VarChar
+  ActivityLog ActivityLog[]
+  Order       Order[]
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESS
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum BookStatus {
+  PENDING
+  AVAILABLE
+  OUT_OF_STOCK
+}
