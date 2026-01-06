@@ -6,6 +6,7 @@ router.post('/', orderController.createOrder);
 router.get('/', orderController.getAllOrders);
 router.get('/:id', orderController.getOrderById);
 router.put('/:id/status', orderController.updateOrderStatus);
+router.put('/:orderId/books/:bookId/status', orderController.updateOrderedBookStatus);
 router.get('/reader/:readerId', orderController.getOrdersByReader);
 router.get('/book/:bookId/stats', orderController.getBookOrderStats);
 

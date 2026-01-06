@@ -246,3 +246,30 @@ exports.getBookOrderStats = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.updateOrderedBookStatus = async (req, res) => {
+    try {
+        const { orderId, bookId } = req.params;
+        const { status } = req.body;
+
+        const orderedBook = await prisma.orderedBook.findFirst({
+            where: {
+                orderId: parseInt(orderId),
+                bookId: parseInt(bookId)
+            }
+        });
+
+        if (!orderedBook) {
+            return res.status(404).json({ error: 'Ordered book not found in this order' });
+        }
+
+        const updated = await prisma.orderedBook.update({
+            where: { id: orderedBook.id },
+            data: { status }
+        });
+
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
