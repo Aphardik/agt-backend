@@ -9,5 +9,6 @@ router.put('/:id/status', orderController.updateOrderStatus);
 router.put('/:orderId/books/:bookId/status', orderController.updateOrderedBookStatus);
 router.get('/reader/:readerId', orderController.getOrdersByReader);
 router.get('/book/:bookId/stats', orderController.getBookOrderStats);
+router.get('/book/:bookId/orders', orderController.getOrdersByBook);
 
 module.exports = router;

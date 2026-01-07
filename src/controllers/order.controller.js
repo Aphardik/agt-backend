@@ -79,9 +79,10 @@ exports.createOrder = async (req, res) => {
                 // Treat null/undefined stock as 0
                 const currentStock = book.stockQty || 0;
 
-                if (currentStock < quantity) {
-                    throw new Error(`Insufficient stock for book "${book.title}" (ID: ${bookId}). Available: ${currentStock}, Requested: ${quantity}`);
-                }
+                // Allow backorders (negative stock) - specific requirement
+                // if (currentStock < quantity) {
+                //     throw new Error(`Insufficient stock for book "${book.title}" (ID: ${bookId}). Available: ${currentStock}, Requested: ${quantity}`);
+                // }
 
                 const newStock = currentStock - quantity;
                 const isAvailable = newStock > 0;
@@ -105,7 +106,9 @@ exports.createOrder = async (req, res) => {
                         create: books.map(book => ({
                             bookId: parseInt(book.bookId),
                             quantity: parseInt(book.quantity),
-                            status: 'PENDING'
+                            bookId: parseInt(book.bookId),
+                            quantity: parseInt(book.quantity),
+                            status: 'NEW_ORDER'
                         }))
                     },
                     ActivityLog: {
@@ -293,3 +296,34 @@ exports.updateOrderedBookStatus = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getOrdersByBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+
+        // Fetch ordered books with their associated order and reader details
+        // Ordered by creation date to support "priority wise" list
+        const results = await prisma.orderedBook.findMany({
+            where: {
+                bookId: parseInt(bookId)
+            },
+            include: {
+                Order: {
+                    include: {
+                        Reader: true
+                    }
+                }
+            },
+            orderBy: {
+                Order: {
+                    createdAt: 'asc' // Oldest orders first (priority)
+                }
+            }
+        });
+
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
