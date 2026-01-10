@@ -84,7 +84,7 @@ exports.createOrder = async (req, res) => {
                 // Determine status based on stock availability
                 let bookStatus = 'NEW_ORDER'; // Default for in-stock
                 if (currentStock < quantity) {
-                    bookStatus = 'WAITING';
+                    bookStatus = 'WAITLISTED';
                 }
 
                 const newStock = currentStock - quantity;
