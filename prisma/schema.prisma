@@ -130,6 +130,7 @@ enum OrderStatus {
 
 enum BookStatus {
   PENDING
+  WAITING
   PROCESS
   AVAILABLE
   OUT_OF_STOCK
