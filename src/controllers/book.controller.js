@@ -52,7 +52,11 @@ exports.getAllBooks = async (req, res) => {
         const skip = (page - 1) * limit;
 
         // 1. Extract new filter parameters from query
-        const { languageId, categoryId, isAvailable } = req.query;
+        const {
+            languageId, categoryId, isAvailable,
+            kabatNumber, minPages, maxPages, bookSize,
+            yearAD, vikramSamvat, veerSamvat
+        } = req.query;
 
         // 2. Build a dynamic WHERE clause using AND
         const where = {
@@ -65,25 +69,40 @@ exports.getAllBooks = async (req, res) => {
                         { bookCode: isNaN(parseInt(search)) ? undefined : parseInt(search) }
                     ].filter(Boolean)
                 } : {},
-                
+
                 // Language filter (handles single ID or array of IDs)
                 languageId ? {
-                    languageId: Array.isArray(languageId) 
-                        ? { in: languageId.map(id => parseInt(id)) } 
+                    languageId: Array.isArray(languageId)
+                        ? { in: languageId.map(id => parseInt(id)) }
                         : parseInt(languageId)
                 } : {},
-                
+
                 // Category filter (handles single ID or array of IDs)
                 categoryId ? {
-                    categoryId: Array.isArray(categoryId) 
-                        ? { in: categoryId.map(id => parseInt(id)) } 
+                    categoryId: Array.isArray(categoryId)
+                        ? { in: categoryId.map(id => parseInt(id)) }
                         : parseInt(categoryId)
                 } : {},
-                
+
                 // Availability filter (converts string "true"/"false" to boolean)
                 isAvailable !== undefined ? {
                     isAvailable: isAvailable === "true"
-                } : {}
+                } : {},
+                // Kabat Number
+                kabatNumber ? { kabatNumber: { contains: kabatNumber, mode: "insensitive" } } : {},
+                // Book Size
+                bookSize ? { bookSize: { contains: bookSize, mode: "insensitive" } } : {},
+                // Pages Range
+                (minPages || maxPages) ? {
+                    pages: {
+                        gte: minPages ? parseInt(minPages) : undefined,
+                        lte: maxPages ? parseInt(maxPages) : undefined
+                    }
+                } : {},
+                // Various Calendars
+                yearAD ? { yearAD: parseInt(yearAD) } : {},
+                vikramSamvat ? { vikramSamvat: parseInt(vikramSamvat) } : {},
+                veerSamvat ? { veerSamvat: parseInt(veerSamvat) } : {}
             ].filter(q => Object.keys(q).length > 0) // Remove empty objects
         };
 

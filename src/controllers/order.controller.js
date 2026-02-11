@@ -135,15 +135,65 @@ exports.createOrder = async (req, res) => {
     }
 };
 
+// exports.getAllOrders = async (req, res) => {
+//     try {
+//         const orders = await prisma.order.findMany({
+//             include: {
+//                 Reader: true,
+//                 OrderedBook: { include: { Book: true } }
+//             },
+//             orderBy: { orderDate: 'desc' }
+//         });
+//         res.json(orders);
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
 exports.getAllOrders = async (req, res) => {
+    const { status, city, state, search } = req.query;
+    
     try {
+        const AND = [];
+
+        // Filter by Order Status (Multi-select)
+        if (status) {
+            const statuses = Array.isArray(status) ? status : [status];
+            AND.push({ status: { in: statuses } });
+        }
+
+        // Filter by City (derived from Reader address)
+        if (city) {
+            const cities = Array.isArray(city) ? city : [city];
+            AND.push({ Reader: { city: { in: cities } } });
+        }
+
+        // Filter by State (derived from Reader address)
+        if (state) {
+            const states = Array.isArray(state) ? state : [state];
+            AND.push({ Reader: { state: { in: states } } });
+        }
+
+        // Search in Reader details or Shipping info
+        if (search) {
+            AND.push({
+                OR: [
+                    { Reader: { name: { contains: search, mode: 'insensitive' } } },
+                    { Reader: { email: { contains: search, mode: 'insensitive' } } },
+                    { shippingDetails: { contains: search, mode: 'insensitive' } }
+                ]
+            });
+        }
+
         const orders = await prisma.order.findMany({
+            where: AND.length > 0 ? { AND } : {},
             include: {
                 Reader: true,
                 OrderedBook: { include: { Book: true } }
             },
             orderBy: { orderDate: 'desc' }
         });
+
         res.json(orders);
     } catch (error) {
         res.status(500).json({ error: error.message });
