@@ -284,7 +284,7 @@ exports.createMultipleBooks = async (req, res) => {
 
         const preparedBooks = books.map((item) => {
             const {
-                bookCode, kabatNumber, bookSize, title, description, author,
+                bookCode, kabatNumber, bookSize, title, description, frontImage, backImage, author,
                 tikakar, prakashak, sampadak, anuvadak, vishay, shreni1,
                 shreni2, shreni3, pages, yearAD, vikramSamvat, veerSamvat,
                 price, prakar, edition, isAvailable, featured, languageId,
@@ -297,6 +297,8 @@ exports.createMultipleBooks = async (req, res) => {
                 bookSize: bookSize || null,
                 title: title || "Untitled",
                 description: description || null,
+                frontImage: frontImage || null,
+                backImage: backImage || null,
                 author: author || null,
                 tikakar: tikakar || null,
                 prakashak: prakashak || null,
