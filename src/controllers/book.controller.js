@@ -1,6 +1,12 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const transformBook = (req, book) => ({
+    ...book,
+    frontImage: book.frontImage ? `${req.protocol}://${req.get("host")}/api/books/${book.id}/image/front` : null,
+    backImage: book.backImage ? `${req.protocol}://${req.get("host")}/api/books/${book.id}/image/back` : null,
+});
+
 // exports.getAllBooks = async (req, res) => {
 //     try {
 //         const page = parseInt(req.query.page) || 1;
@@ -121,7 +127,7 @@ exports.getAllBooks = async (req, res) => {
         ]);
 
         res.json({
-            books,
+            books: books.map(book => transformBook(req, book)),
             pagination: {
                 total,
                 page,
@@ -145,7 +151,7 @@ exports.getBookById = async (req, res) => {
             },
         });
         if (!book) return res.status(404).json({ error: "Book not found" });
-        res.json(book);
+        res.json(transformBook(req, book));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -164,10 +170,8 @@ exports.createBook = async (req, res) => {
             data: {
                 title,
                 description: description || null,
-                // frontImage: req.files && req.files["frontImage"] ? `${req.protocol}://${req.get("host")}/uploads/${req.files["frontImage"][0].filename}` : frontImage || null,
-                // backImage: req.files && req.files["backImage"] ? `${req.protocol}://${req.get("host")}/uploads/${req.files["backImage"][0].filename}` : backImage || null,
-                frontImage:frontImage || null,
-                backImage:backImage || null,
+                frontImage: req.files && req.files["frontImage"] ? req.files["frontImage"][0].buffer : null,
+                backImage: req.files && req.files["backImage"] ? req.files["backImage"][0].buffer : null,
                 stockQty: parseIntSafe(stockQty) || 0,
                 isAvailable: isAvailable === "true" || isAvailable === true,
                 featured: featured === "true" || featured === true,
@@ -194,7 +198,7 @@ exports.createBook = async (req, res) => {
                 edition: parseIntSafe(edition)
             },
         });
-        res.status(201).json(book);
+        res.status(201).json(transformBook(req, book));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -243,10 +247,10 @@ exports.updateBook = async (req, res) => {
 
         if (req.files) {
             if (req.files["frontImage"]) {
-                data.frontImage = `${req.protocol}://${req.get("host")}/uploads/${req.files["frontImage"][0].filename}`;
+                data.frontImage = req.files["frontImage"][0].buffer;
             }
             if (req.files["backImage"]) {
-                data.backImage = `${req.protocol}://${req.get("host")}/uploads/${req.files["backImage"][0].filename}`;
+                data.backImage = req.files["backImage"][0].buffer;
             }
         }
 
@@ -254,7 +258,7 @@ exports.updateBook = async (req, res) => {
             where: { id: parseInt(id) },
             data,
         });
-        res.json(book);
+        res.json(transformBook(req, book));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -343,6 +347,31 @@ exports.createMultipleBooks = async (req, res) => {
             totalProcessed: preparedBooks.length,
             ignored: preparedBooks.length - validBooks.length
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getBookImage = async (req, res) => {
+    try {
+        const { id, type } = req.params;
+        const book = await prisma.book.findUnique({
+            where: { id: parseInt(id) },
+            select: {
+                frontImage: type === 'front',
+                backImage: type === 'back'
+            }
+        });
+
+        if (!book) return res.status(404).json({ error: "Book not found" });
+
+        const image = type === 'front' ? book.frontImage : book.backImage;
+        if (!image) return res.status(404).json({ error: "Image not found" });
+
+        // You might want to store/detect the mime type, but usually images are jpeg/png
+        // For simplicity, we'll try to detect from the buffer or just serve as image/jpeg
+        res.set('Content-Type', 'image/jpeg'); // Defaulting to jpeg, browser usually handles it
+        res.send(image);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

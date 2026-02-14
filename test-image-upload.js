@@ -33,8 +33,8 @@ async function testUpload() {
         console.log('Success! Book created:', data.id);
         console.log('Front Image URL:', data.frontImage);
 
-        if (!data.frontImage || !data.frontImage.includes('/uploads/')) {
-            throw new Error('Front image URL is malformed or missing');
+        if (!data.frontImage || !data.frontImage.includes('/image/front')) {
+            throw new Error('Front image URL is malformed or missing (expected /image/front)');
         }
 
         // Cleanup

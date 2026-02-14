@@ -6,15 +6,7 @@ const multer = require('multer');
 const path = require('path');
 
 // Configure Multer Storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '../uploads'));
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage: storage });
 
@@ -23,6 +15,7 @@ const uploadFields = upload.fields([
     { name: 'backImage', maxCount: 1 }
 ]);
 
+router.get('/:id/image/:type', bookController.getBookImage);
 router.get('/', bookController.getAllBooks);
 router.get('/:id', bookController.getBookById);
 router.post('/bulk', bookController.createMultipleBooks);
