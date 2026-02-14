@@ -213,6 +213,8 @@ exports.updateBook = async (req, res) => {
         const data = {
             title,
             description: description || null,
+            frontImage: frontImage || null,
+            backImage: backImage || null,
             stockQty: parseIntSafe(stockQty) ?? 0,
             isAvailable: isAvailable === "true" || isAvailable === true,
             featured: featured === "true" || featured === true,
