@@ -356,7 +356,7 @@ exports.deleteBook = async (req, res) => {
 exports.createMultipleBooks = async (req, res) => {
     try {
         const books = req.body.books; // Expecting books array in req.body.books
-
+        
         if (!Array.isArray(books)) {
             return res.status(400).json({ error: "Data must be an array of books" });
         }
@@ -364,6 +364,20 @@ exports.createMultipleBooks = async (req, res) => {
         const parseIntSafe = (v) => {
             const parsed = parseInt(v);
             return isNaN(parsed) ? null : parsed;
+        };
+
+        // Helper to get buffer from either req.files OR Base64 string in JSON body
+        const getBuffer = (index, key, base64Data) => {
+            // 1. Check if file exists in multipart/form-data (files)
+            if (req.files && req.files[`books[${index}][${key}]`]) {
+                return req.files[`books[${index}][${key}]`][0].buffer;
+            }
+            // 2. Check if image was sent as Base64 string in JSON body
+            if (base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:image')) {
+                const base64String = base64Data.split(';base64,').pop();
+                return Buffer.from(base64String, 'base64');
+            }
+            return null;
         };
 
         const createdBooks = [];
@@ -374,11 +388,11 @@ exports.createMultipleBooks = async (req, res) => {
             try {
                 const item = books[i];
                 const {
-                    bookCode, kabatNumber, bookSize, title, description,
-                    frontImage, backImage, author, tikakar, prakashak,
-                    sampadak, anuvadak, vishay, shreni1, shreni2, shreni3,
-                    pages, yearAD, vikramSamvat, veerSamvat, price, prakar,
-                    edition, isAvailable, featured, languageId, categoryId,
+                    bookCode, kabatNumber, bookSize, title, description, 
+                    frontImage, backImage, author, tikakar, prakashak, 
+                    sampadak, anuvadak, vishay, shreni1, shreni2, shreni3, 
+                    pages, yearAD, vikramSamvat, veerSamvat, price, prakar, 
+                    edition, isAvailable, featured, languageId, categoryId, 
                     stockQty
                 } = item;
 
@@ -388,14 +402,9 @@ exports.createMultipleBooks = async (req, res) => {
                     continue;
                 }
 
-                // Handle file uploads - check if files exist for this specific book index
-                const frontImageBuffer = req.files && req.files[`books[${i}][frontImage]`]
-                    ? req.files[`books[${i}][frontImage]`][0].buffer
-                    : null;
-
-                const backImageBuffer = req.files && req.files[`books[${i}][backImage]`]
-                    ? req.files[`books[${i}][backImage]`][0].buffer
-                    : null;
+                // Handle file uploads - check for both multipart files and Base64
+                const frontImageBuffer = getBuffer(i, 'frontImage', frontImage);
+                const backImageBuffer = getBuffer(i, 'backImage', backImage);
 
                 const book = await prisma.book.create({
                     data: {
