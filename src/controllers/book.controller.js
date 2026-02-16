@@ -276,9 +276,87 @@ exports.deleteBook = async (req, res) => {
     }
 };
 
+// exports.createMultipleBooks = async (req, res) => {
+//     try {
+//         const books = req.body;
+//         if (!Array.isArray(books)) {
+//             return res.status(400).json({ error: "Data must be an array of books" });
+//         }
+
+//         const parseIntSafe = (v) => {
+//             const parsed = parseInt(v);
+//             return isNaN(parsed) ? null : parsed;
+//         };
+
+//         const preparedBooks = books.map((item) => {
+//             const {
+//                 bookCode, kabatNumber, bookSize, title, description, frontImage, backImage, author,
+//                 tikakar, prakashak, sampadak, anuvadak, vishay, shreni1,
+//                 shreni2, shreni3, pages, yearAD, vikramSamvat, veerSamvat,
+//                 price, prakar, edition, isAvailable, featured, languageId,
+//                 categoryId, stockQty
+//             } = item;
+
+//             return {
+//                 bookCode: parseIntSafe(bookCode) || 0,
+//                 kabatNumber: parseIntSafe(kabatNumber),
+//                 bookSize: bookSize || null,
+//                 title: title || "Untitled",
+//                 description: description || null,
+//                 frontImage: frontImage || null,
+//                 backImage: backImage || null,
+//                 author: author || null,
+//                 tikakar: tikakar || null,
+//                 prakashak: prakashak || null,
+//                 sampadak: sampadak || null,
+//                 anuvadak: anuvadak || null,
+//                 vishay: vishay || null,
+//                 shreni1: shreni1 || null,
+//                 shreni2: shreni2 || null,
+//                 shreni3: shreni3 || null,
+//                 pages: parseIntSafe(pages),
+//                 yearAD: parseIntSafe(yearAD),
+//                 vikramSamvat: parseIntSafe(vikramSamvat),
+//                 veerSamvat: parseIntSafe(veerSamvat),
+//                 price: price ? parseFloat(price) : 0,
+//                 prakar: prakar || null,
+//                 edition: parseIntSafe(edition),
+//                 isAvailable: isAvailable === "true" || isAvailable === true,
+//                 featured: featured === "true" || featured === true,
+//                 languageId: parseIntSafe(languageId),
+//                 categoryId: parseIntSafe(categoryId),
+//                 stockQty: parseIntSafe(stockQty) ?? 0
+//             };
+//         });
+
+//         // Filter out items that are missing mandatory title or bookCode
+//         const validBooks = preparedBooks.filter(b => b.title && b.bookCode);
+
+//         if (validBooks.length === 0) {
+//             return res.status(400).json({ error: "No valid books found in the input data" });
+//         }
+
+//         const createdBooks = await prisma.book.createMany({
+//             data: validBooks,
+//             skipDuplicates: true,
+//         });
+
+//         res.status(201).json({
+//             message: `${createdBooks.count} books created successfully`,
+//             count: createdBooks.count,
+//             totalProcessed: preparedBooks.length,
+//             ignored: preparedBooks.length - validBooks.length
+//         });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
+
 exports.createMultipleBooks = async (req, res) => {
     try {
-        const books = req.body;
+        const books = req.body.books; // Expecting books array in req.body.books
+
         if (!Array.isArray(books)) {
             return res.status(400).json({ error: "Data must be an array of books" });
         }
@@ -288,64 +366,83 @@ exports.createMultipleBooks = async (req, res) => {
             return isNaN(parsed) ? null : parsed;
         };
 
-        const preparedBooks = books.map((item) => {
-            const {
-                bookCode, kabatNumber, bookSize, title, description, frontImage, backImage, author,
-                tikakar, prakashak, sampadak, anuvadak, vishay, shreni1,
-                shreni2, shreni3, pages, yearAD, vikramSamvat, veerSamvat,
-                price, prakar, edition, isAvailable, featured, languageId,
-                categoryId, stockQty
-            } = item;
+        const createdBooks = [];
+        const errors = [];
 
-            return {
-                bookCode: parseIntSafe(bookCode) || 0,
-                kabatNumber: parseIntSafe(kabatNumber),
-                bookSize: bookSize || null,
-                title: title || "Untitled",
-                description: description || null,
-                frontImage: frontImage || null,
-                backImage: backImage || null,
-                author: author || null,
-                tikakar: tikakar || null,
-                prakashak: prakashak || null,
-                sampadak: sampadak || null,
-                anuvadak: anuvadak || null,
-                vishay: vishay || null,
-                shreni1: shreni1 || null,
-                shreni2: shreni2 || null,
-                shreni3: shreni3 || null,
-                pages: parseIntSafe(pages),
-                yearAD: parseIntSafe(yearAD),
-                vikramSamvat: parseIntSafe(vikramSamvat),
-                veerSamvat: parseIntSafe(veerSamvat),
-                price: price ? parseFloat(price) : 0,
-                prakar: prakar || null,
-                edition: parseIntSafe(edition),
-                isAvailable: isAvailable === "true" || isAvailable === true,
-                featured: featured === "true" || featured === true,
-                languageId: parseIntSafe(languageId),
-                categoryId: parseIntSafe(categoryId),
-                stockQty: parseIntSafe(stockQty) ?? 0
-            };
-        });
+        // Process each book individually to handle file uploads
+        for (let i = 0; i < books.length; i++) {
+            try {
+                const item = books[i];
+                const {
+                    bookCode, kabatNumber, bookSize, title, description,
+                    frontImage, backImage, author, tikakar, prakashak,
+                    sampadak, anuvadak, vishay, shreni1, shreni2, shreni3,
+                    pages, yearAD, vikramSamvat, veerSamvat, price, prakar,
+                    edition, isAvailable, featured, languageId, categoryId,
+                    stockQty
+                } = item;
 
-        // Filter out items that are missing mandatory title or bookCode
-        const validBooks = preparedBooks.filter(b => b.title && b.bookCode);
+                // Skip if missing mandatory fields
+                if (!title || !bookCode) {
+                    errors.push({ index: i, error: "Missing title or bookCode" });
+                    continue;
+                }
 
-        if (validBooks.length === 0) {
-            return res.status(400).json({ error: "No valid books found in the input data" });
+                // Handle file uploads - check if files exist for this specific book index
+                const frontImageBuffer = req.files && req.files[`books[${i}][frontImage]`]
+                    ? req.files[`books[${i}][frontImage]`][0].buffer
+                    : null;
+
+                const backImageBuffer = req.files && req.files[`books[${i}][backImage]`]
+                    ? req.files[`books[${i}][backImage]`][0].buffer
+                    : null;
+
+                const book = await prisma.book.create({
+                    data: {
+                        title,
+                        description: description || null,
+                        frontImage: frontImageBuffer,
+                        backImage: backImageBuffer,
+                        stockQty: parseIntSafe(stockQty) ?? 0,
+                        isAvailable: isAvailable === "true" || isAvailable === true,
+                        featured: featured === "true" || featured === true,
+                        languageId: parseIntSafe(languageId),
+                        categoryId: parseIntSafe(categoryId),
+                        bookCode: parseIntSafe(bookCode) || 0,
+                        kabatNumber: parseIntSafe(kabatNumber),
+                        bookSize: bookSize || null,
+                        author: author || null,
+                        tikakar: tikakar || null,
+                        prakashak: prakashak || null,
+                        sampadak: sampadak || null,
+                        anuvadak: anuvadak || null,
+                        vishay: vishay || null,
+                        shreni1: shreni1 || null,
+                        shreni2: shreni2 || null,
+                        shreni3: shreni3 || null,
+                        pages: parseIntSafe(pages),
+                        yearAD: parseIntSafe(yearAD),
+                        vikramSamvat: parseIntSafe(vikramSamvat),
+                        veerSamvat: parseIntSafe(veerSamvat),
+                        price: price ? parseFloat(price) : 0,
+                        prakar: prakar || null,
+                        edition: parseIntSafe(edition)
+                    }
+                });
+
+                createdBooks.push(transformBook(req, book));
+            } catch (error) {
+                errors.push({ index: i, error: error.message });
+            }
         }
 
-        const createdBooks = await prisma.book.createMany({
-            data: validBooks,
-            skipDuplicates: true,
-        });
-
         res.status(201).json({
-            message: `${createdBooks.count} books created successfully`,
-            count: createdBooks.count,
-            totalProcessed: preparedBooks.length,
-            ignored: preparedBooks.length - validBooks.length
+            message: `${createdBooks.length} books created successfully`,
+            count: createdBooks.length,
+            totalProcessed: books.length,
+            failed: errors.length,
+            createdBooks: createdBooks,
+            errors: errors.length > 0 ? errors : undefined
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
