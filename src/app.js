@@ -21,6 +21,7 @@ app.use('/api/masters', require('./routes/master.routes'));
 app.use('/api/readers', require('./routes/reader.routes'));
 app.use('/api/orders', require('./routes/order.routes'));
 app.use('/api/activity-logs', require('./routes/activity.routes'));
+app.use('/api/saved-reports', require('./routes/report.routes'));
 
 app.get('/', (req, res) => {
   res.send('AGT Book Panel Backend is running');
